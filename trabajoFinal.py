@@ -9,21 +9,34 @@ def conexion_bbdd():
 
     mi_cursor = mi_conexion.cursor()
 
-    mi_cursor.execute(
-        '''
-            CREATE TABLE inventario(
-            ID INTEGER PRIMARY KEY AUTOINCREMENT,
-            NOMBRE VARCHAR(50) NOT NULL,
-            DESCRIPCION VARCHAR(100) NOT NULL,
-            CANTIDAD INTEGER NOT NULL,
-            PRECIO FLOAT NOT NULL,
-            CATEGORIA VARCHAR(50) NOT NULL
-            )
-        '''
-    )
+    try:
+        mi_cursor.execute(
+            '''
+                CREATE TABLE productos(
+                ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                NOMBRE VARCHAR(50) NOT NULL,
+                DESCRIPCION VARCHAR(100) NOT NULL,
+                CANTIDAD INTEGER NOT NULL,
+                PRECIO FLOAT NOT NULL,
+                CATEGORIA VARCHAR(50) NOT NULL
+                )
+            '''
+        )
+
+        mi_conexion.commit()
+
+        mi_conexion.close()
+    except:
+        print("La tabla ya ha sido creada.")
+
+def eliminar_tabla():
+
+    mi_conexion = sqlite3.connect("inventario")
+    mi_cursor = mi_conexion.cursor()
+    
+    mi_cursor.execute("DROP TABLE productos")
 
     mi_conexion.commit()
-
     mi_conexion.close()
 
 
@@ -44,7 +57,7 @@ def agregar_producto():
 
     categoria = input("Categoría: ")
 
-    mi_cursor.execute("INSERT INTO inventario (nombre, descripcion, cantidad , precio, categoria) VALUES (?,?,?,?,?))", (nombre, descripcion, cantidad, precio, categoria))
+    mi_cursor.execute("INSERT INTO productos (nombre, descripcion, cantidad , precio, categoria) VALUES (?,?,?,?,?)", (nombre, descripcion, cantidad, precio, categoria))
 
     mi_conexion.commit()
 
@@ -60,7 +73,7 @@ def actualizar_cantidad_producto():
     try:
 
         #Obtengo una lista de tuplas de la tabla inventario y muestro los productos existentes
-        mi_cursor.execute("SELECT ID, NOMBRE, CANTIDAD FROM inventario")
+        mi_cursor.execute("SELECT ID, NOMBRE, CANTIDAD FROM productos")
         productos = mi_cursor.fetchall()
 
         if not productos:
@@ -72,10 +85,10 @@ def actualizar_cantidad_producto():
             print(f"ID: {producto[0]}, Nombre: {producto[1]}, Cantidad actual: {producto[2]}")
         
         #Solicito ID del producto
-        idProducto = int(input("Inserte el ID del producto que desea modificar: "))
+        idProducto = input("Inserte el ID del producto que desea modificar: ")
 
         #Verificar existencia del producto
-        mi_cursor.execute("SELECT CANTIDAD FROM inventario WHERE ID = ?", (idProducto))
+        mi_cursor.execute("SELECT CANTIDAD FROM productos WHERE ID = ?", (idProducto))
         producto = mi_cursor.fetchone()
 
         if producto is None:
@@ -83,9 +96,9 @@ def actualizar_cantidad_producto():
             return
         
         #Solicitar nueva cantidad
-        nueva_cantidad = int(int("Ingrese nueva cantidad: "))
+        nueva_cantidad = int(input("Ingrese nueva cantidad: "))
 
-        mi_cursor.execute("UPDATE inventario SET CANTIDAD = ? WHERE ID = ? ",
+        mi_cursor.execute("UPDATE productos SET CANTIDAD = ? WHERE ID = ? ",
                           (nueva_cantidad, idProducto))
         
         mi_conexion.commit()
@@ -107,7 +120,7 @@ def mostrar_datos():
 
     try:
         #Obtengo los productos
-        mi_cursor.execute("SELECT * FROM inventario")
+        mi_cursor.execute("SELECT * FROM productos")
         productos = mi_cursor.fetchall()
 
         if not productos:
@@ -135,7 +148,7 @@ def eliminar_producto():
     mi_cursor = mi_conexion.cursor()
 
     try:
-        mi_cursor.execute("SELECT ID, NOMBRE, CANTIDAD FROM inventario")
+        mi_cursor.execute("SELECT ID, NOMBRE, CANTIDAD FROM productos")
         productos = mi_cursor.fetchall()
 
         if not productos:
@@ -147,17 +160,17 @@ def eliminar_producto():
             print(f"ID: {producto[0]}, Nombre: {producto[1]}, Cantidad actual: {producto[2]}")
 
         #Solicito ID del producto
-        idProducto = int(input("Inserte el ID del producto que desea modificar: "))
+        idProducto = input("Inserte el ID del producto que desea eliminar: ")
 
         #Verificar existencia del producto
-        mi_cursor.execute("SELECT CANTIDAD FROM inventario WHERE ID = ?", (idProducto))
+        mi_cursor.execute("SELECT * FROM productos WHERE ID = ?",(idProducto))
         producto = mi_cursor.fetchone()
 
         if producto is None:
             print("Producto no existente.")
             return
         
-        mi_cursor.execute("DELETE FROM inventario WHERE ID = ?",(idProducto))
+        mi_cursor.execute("DELETE FROM productos WHERE ID = ?",(idProducto))
         mi_conexion.commit()
         print("Producto eliminado con éxito.")
 
@@ -172,7 +185,7 @@ def buscar_producto():
     try:
         nombre_producto = input("Ingresar el producto que desee buscar: ")
         #Consulta para buscar producto:
-        mi_cursor.execute("SELECT * FROM inventario WHERE NOMBRE LIKE ?", (f"%{nombre_producto}%",))
+        mi_cursor.execute("SELECT * FROM productos WHERE NOMBRE LIKE ?", (f"%{nombre_producto}%",))
         productos = mi_cursor.fetchall()
 
         if not productos:
@@ -196,9 +209,9 @@ def bajo_stock():
     mi_cursor = mi_conexion.cursor()
 
     try:
-        limite_stock = int(input("Ingrese el límite de cantidad para generar reporte: "))
+        limite_stock = input("Ingrese el límite de cantidad para generar reporte: ")
         
-        mi_cursor.execute("SELECT * FROM inventario WHERE CANTIDAD <= ?", (limite_stock))
+        mi_cursor.execute("SELECT * FROM productos WHERE CANTIDAD <= ?", (limite_stock,))
         productos = mi_cursor.fetchall()
 
         if not productos:
@@ -218,3 +231,51 @@ def bajo_stock():
     finally:
         mi_conexion.close()
 
+
+def main():
+
+    conexion_bbdd()
+
+    print("\n\n\n¡BIENVENIDO USUARIO!\n")
+
+    while True:
+
+        print("\n\nSELECCIONE LA OPCION QUE DESEE UTILIZAR: " +
+        "1- AGREGAR UN PRODUCTO " +
+        "2 - MOSTRAR UN PRODUCTO " +
+        "3 - ELIMINAR UN PRODUCTO " +
+        "4 - EDITAR LA CANTIDAD DE UN PRODUCTO " +
+        "5 - BUSCAR UN PRODUCTO " +
+        "6 - GENERAR REPORTE BAJO STOCK " +
+        "7 - SALIR\n")
+
+        try:
+            opcion = int(input("\nIngrese la opción que desea: "))
+
+            if opcion == 1:
+                agregar_producto()
+            elif opcion == 2:
+                mostrar_datos()
+            elif opcion == 3:
+                eliminar_producto()
+            elif opcion == 4:
+                actualizar_cantidad_producto()
+            elif opcion == 5:
+                buscar_producto()
+            elif opcion == 6:
+                bajo_stock()
+            elif opcion == 7:
+                print("Gracias, vuelva prontos.")
+                break
+            else:
+                print("Opción no válida. Debe ingresar un número del 1 al 7")
+
+        except ValueError:
+            print("Error: ingrese un número válido.")
+        except Exception as e:
+            print(f"Error inesperado: {e}")            
+            
+
+# Ejecución de la función main() - (NO ELIMINAR)
+if __name__ == "__main__":
+    main()
