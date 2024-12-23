@@ -57,9 +57,12 @@ def agregar_producto():
 
     categoria = input("Categoría: ")
 
-    mi_cursor.execute("INSERT INTO productos (nombre, descripcion, cantidad , precio, categoria) VALUES (?,?,?,?,?)", (nombre, descripcion, cantidad, precio, categoria))
-
-    mi_conexion.commit()
+    producto_existente = mi_cursor.execute("SELECT * FROM productos WHERE nombre = ?",(nombre,))
+    if producto_existente is None:
+        mi_cursor.execute("INSERT INTO productos (nombre, descripcion, cantidad , precio, categoria) VALUES (?,?,?,?,?)", (nombre, descripcion, cantidad, precio, categoria))
+        mi_conexion.commit()
+    else:
+        print("\nProducto Existente.")
 
 
 
